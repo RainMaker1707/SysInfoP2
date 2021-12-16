@@ -218,7 +218,7 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
         header = (tar_header_t*) buffer;
         if(header->typeflag == REGTYPE && TAR_INT(header->size)) {
             int size = TAR_INT(header->size);
-            lseek(tar_fd, 512 + size, SEEK_CUR);
+            lseek(tar_fd, 512*(size/512 +1), SEEK_CUR);
         }
         char *copy = (char*) malloc(100);
         strcpy(copy, temp); // copy because strtok modify his first argument
@@ -262,6 +262,8 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
     if(is_symlink(tar_fd, path)){ // it's a file but it's a symlink
         read(tar_fd, buffer, 512); // copy header in buffer
         path = ((tar_header_t*)buffer)->linkname; //reset path to the pointed link
+        path[strlen(((tar_header_t*)buffer)->linkname)] = '/';
+        path[strlen(((tar_header_t*)buffer)->linkname) + 1] = '\0';
     }
     lseek(tar_fd, 0, SEEK_SET); // reset pointer to the beginning of the file descriptor
     while(read(tar_fd, buffer, 512)){ //while pointer is in file allocated memory, step 512 bytes
