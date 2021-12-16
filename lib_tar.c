@@ -51,7 +51,7 @@ int exists(int tar_fd, char *path) {
     while(read(tar_fd, buffer, 512)){
         tar_header_t *header = (tar_header_t*) buffer;
         // if it exists
-        if (strcmp(header->name, path) == 0){
+        if (strncmp(header->name, path, strlen(path)) == 0){
             free(buffer); //garbage buffer
             lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer
             return 1;  //  we found the directory
