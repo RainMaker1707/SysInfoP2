@@ -24,15 +24,13 @@ int check_archive(int tar_fd) {
         if (*buffer == AREGTYPE) break; //end of archive/file '\0'
         tar_header_t *header = (tar_header_t*) buffer;
         // hardcoded value to test if strcmp don't work
-        if(header->magic[0] != 'u' || header->magic[1] != 's' || header->magic[2] != 't' ||
-                header->magic[3] != 'a' ||  header->magic[4] != 'r' || header->magic[5] != '\0')  result = -1;
-        //if(strncmp(header->magic, "ustar", TMAGLEN) != 0) result = -1; // magic value is not ustar
+        if(strncmp(header->magic, TMAGIC, TMAGLEN) != 0) result = -1; // magic value is not ustar
         else if(strncmp(header->version, TVERSION, TVERSLEN) != 0) result = -2;   // version value is not 00
         else if(TAR_INT(header->chksum) != checksum(buffer)) result = -3;// invalid checksum-> dangerous file
         if (result < 0) break; // if it is invalid archive
         if(header->typeflag == REGTYPE ){
             size_t size = TAR_INT(header->size);
-            if(size != 0) lseek(tar_fd, 512+size, SEEK_CUR);
+            if(size != 0) lseek(tar_fd, 512*(size/512 +1), SEEK_CUR);
         }
         result++; // one header successfully passed
     }
