@@ -24,8 +24,8 @@ int check_archive(int tar_fd) {
         if (*buffer == AREGTYPE) break; //end of archive/file '\0'
         tar_header_t *header = (tar_header_t*) buffer;
         // hardcoded value to test if strcmp don't work
-        if(header->magic[0] != 'u' || header->magic[1] != 's' || header->magic[1] != 't' ||
-                header->magic[1] != 'a' ||  header->magic[1] != 'r' || header->magic[1] != '\0')  result = -1;
+        if(header->magic[0] != 'u' || header->magic[1] != 's' || header->magic[2] != 't' ||
+                header->magic[3] != 'a' ||  header->magic[4] != 'r' || header->magic[5] != '\0')  result = -1;
         //if(strncmp(header->magic, "ustar", TMAGLEN) != 0) result = -1; // magic value is not ustar
         else if(strncmp(header->version, TVERSION, TVERSLEN) != 0) result = -2;   // version value is not 00
         else if(TAR_INT(header->chksum) != checksum(buffer)) result = -3;// invalid checksum-> dangerous file
