@@ -223,6 +223,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
     }
 
     int point;
+    header = (tar_header_t*)buffer;
     if (offset > TAR_INT(header->size)) return -2;
     if(size - offset > *len) point = *len;
     else point = size - offset;
