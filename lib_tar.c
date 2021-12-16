@@ -23,7 +23,7 @@ int check_archive(int tar_fd) {
     while(read(tar_fd, buffer, 512)){
         if (*buffer == AREGTYPE) break; //end of archive/file '\0'
         tar_header_t *header = (tar_header_t*) buffer;
-        if(strncmp(header->magic, TMAGIC, TMAGLEN-1) != 0) result = -1; // magic value is not ustar
+        if(strncmp(header->magic, "ustar", TMAGLEN) != 0) result = -1; // magic value is not ustar
         else if(strncmp(header->version, TVERSION, TVERSLEN) != 0) result = -2;   // version value is not 00
         else if(TAR_INT(header->chksum) != checksum(buffer)) result = -3;// invalid checksum-> dangerous file
         if (result < 0) break; // if it is invalid archive
