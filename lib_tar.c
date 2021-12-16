@@ -148,7 +148,8 @@ int is_symlink(int tar_fd, char *path) {
     while(read(tar_fd, buffer, 512)){
         tar_header_t *header = (tar_header_t*) buffer;
         // if it is the directory we search for
-        if (strncmp(header->name, path, strlen(path) - 1) == 0 &&  header->typeflag == SYMTYPE){
+        //printf("H: -  %s *** P: -  %s *** T: -  %c\n", header->name, path, header->typeflag);
+        if (strcmp(header->name, path) == 0 &&  header->typeflag == SYMTYPE){
             free(buffer); //garbage buffer
             lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer
             return 1;  //  we found the directory
