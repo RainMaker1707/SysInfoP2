@@ -48,15 +48,22 @@ int check_archive(int tar_fd) {
  *         any other value otherwise.
  */
 int exists(int tar_fd, char *path) {
+    if(path == NULL) return 0;
     char *buffer = (char *) malloc(512);
     if(!buffer) return EXIT_FAILURE;
     while(read(tar_fd, buffer, 512)){
         tar_header_t *header = (tar_header_t*) buffer;
         // if it exists
-        if (strncmp(header->name, path, strlen(path) - 2) == 0){
-            free(buffer); //garbage buffer
+        if (strncmp(header->name, path, strlen(path) - 1) == 0){
             lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer
-            return 1;  //  we found the directory
+            if(header->typeflag == DIRTYPE || header->typeflag == REGTYPE) {
+                free(buffer); //garbage buffer
+                return 1;  //  we found the directory
+            }
+            if(header->typeflag == SYMTYPE){
+                free(buffer);
+                return exists(tar_fd, header->linkname);
+            }
         }
         // if it is a simple file
         if( header->typeflag == REGTYPE ) {
@@ -79,12 +86,13 @@ int exists(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int is_dir(int tar_fd, char *path) {
+    if(path == NULL) return 0;
     char *buffer = (char *) malloc(512);
     if(!buffer) return EXIT_FAILURE;
     while(read(tar_fd, buffer, 512)){
         tar_header_t *header = (tar_header_t*) buffer;
         // if it is the directory we search for
-        if (strncmp(header->name, path, strlen(path) - 2) == 0 &&  header->typeflag == DIRTYPE){
+        if (strncmp(header->name, path, strlen(path) - 1) == 0 &&  header->typeflag == DIRTYPE){
             free(buffer); //garbage buffer
             lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer
             return 1;  //  we found the directory
@@ -110,6 +118,7 @@ int is_dir(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int is_file(int tar_fd, char *path){
+    if(path == NULL) return 0;
     char *buffer = (char *) malloc(512);
     if(!buffer) return EXIT_FAILURE;
     while(read(tar_fd, buffer, 512)){
@@ -145,7 +154,7 @@ int is_symlink(int tar_fd, char *path) {
     while(read(tar_fd, buffer, 512)){
         tar_header_t *header = (tar_header_t*) buffer;
         // if it is the directory we search for
-        if (strncmp(header->name, path, strlen(path) - 2) == 0 &&  header->typeflag == SYMTYPE){
+        if (strncmp(header->name, path, strlen(path) - 1) == 0 &&  header->typeflag == SYMTYPE){
             free(buffer); //garbage buffer
             lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer
             return 1;  //  we found the directory
