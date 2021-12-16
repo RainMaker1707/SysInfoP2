@@ -23,7 +23,7 @@ void debug_dump(const uint8_t *bytes, size_t len) {
         printf("\n");
     }
 }
-
+/*
 int main(int argc, char **argv) {
     if (argc < 2) {
         printf("Usage: %s tar_file\n", argv[0]);
@@ -40,4 +40,19 @@ int main(int argc, char **argv) {
     printf("check_archive returned %d\n", ret);
 
     return 0;
+}
+ */
+
+int main(int argc, char **argv){
+    int tar_fd = open("./archive2.tar", O_RDONLY);
+    printf("IS DIR with dir? -- %d (1)\n", is_dir(tar_fd, "archive/dir/not_dir/"));
+    printf("IS DIR with file? -- %d (0)\n", is_dir(tar_fd, "archive/file.txt"));
+    printf("IS FILE with dir? -- %d (0)\n", is_file(tar_fd, "archive/dir/"));
+    printf("IS FILE with file? -- %d (1)\n", is_file(tar_fd, "archive/dir/file2.txt"));
+    printf("EXISTING FILE -- %d (1)\n", exists(tar_fd, "archive/dir/file2.txt"));
+    printf("IS FILE with file? -- %d (1)\n", is_file(tar_fd, "archive/file.txt"));
+    printf("IS FILE with file? -- %d (1)\n", is_file(tar_fd, "archive/dir/not_dir/file3.txt"));
+    printf("IS FILE with TAR? -- %d (1)\n", is_file(tar_fd, "archive/dir/archive.tar"));
+    printf("%d\n", check_archive(tar_fd));
+    return EXIT_SUCCESS;
 }
