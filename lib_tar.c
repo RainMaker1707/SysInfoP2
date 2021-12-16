@@ -19,6 +19,7 @@
 int check_archive(int tar_fd) {
     int result = 0;
     char *buffer = (char*)malloc(512);
+    if(!buffer) return EXIT_FAILURE;
     while(read(tar_fd, buffer, 512)){
         if (*buffer == AREGTYPE) break; //end of archive/file '\0'
         tar_header_t *header = (tar_header_t*) buffer;
@@ -27,7 +28,7 @@ int check_archive(int tar_fd) {
         else if(TAR_INT(header->chksum) != checksum(buffer)) result = -3;// invalid checksum-> dangerous file
         if (result < 0) break; // if it is invalid archive
         if(header->typeflag == REGTYPE ){
-            ssize_t size = TAR_INT(header->size);
+            size_t size = TAR_INT(header->size);
             if(size != 0) lseek(tar_fd, 512+size, SEEK_CUR);
         }
         result++; // one header successfully passed
@@ -48,17 +49,18 @@ int check_archive(int tar_fd) {
  */
 int exists(int tar_fd, char *path) {
     char *buffer = (char *) malloc(512);
+    if(!buffer) return EXIT_FAILURE;
     while(read(tar_fd, buffer, 512)){
         tar_header_t *header = (tar_header_t*) buffer;
         // if it exists
-        if (strncmp(header->name, path, strlen(path)) == 0){
+        if (strncmp(header->name, path, strlen(path) -1) == 0){
             free(buffer); //garbage buffer
             lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer
             return 1;  //  we found the directory
         }
         // if it is a simple file
         if( header->typeflag == REGTYPE ) {
-            ssize_t size = TAR_INT(header->size); // get the size of this file
+            size_t size = TAR_INT(header->size); // get the size of this file
             if(size != 0) lseek (tar_fd, 512+size, SEEK_CUR);  // Go to next header
         }
     }
@@ -78,6 +80,7 @@ int exists(int tar_fd, char *path) {
  */
 int is_dir(int tar_fd, char *path) {
     char *buffer = (char *) malloc(512);
+    if(!buffer) return EXIT_FAILURE;
     while(read(tar_fd, buffer, 512)){
         tar_header_t *header = (tar_header_t*) buffer;
         // if it is the directory we search for
@@ -88,7 +91,7 @@ int is_dir(int tar_fd, char *path) {
         }
         // if it is a simple file
         if( header->typeflag == REGTYPE ) {
-            ssize_t size = TAR_INT(header->size); // get the size of this file
+            size_t size = TAR_INT(header->size); // get the size of this file
             if(size != 0) lseek (tar_fd, 512+size, SEEK_CUR);  // Go to next header
         }
     }
@@ -108,6 +111,7 @@ int is_dir(int tar_fd, char *path) {
  */
 int is_file(int tar_fd, char *path){
     char *buffer = (char *) malloc(512);
+    if(!buffer) return EXIT_FAILURE;
     while(read(tar_fd, buffer, 512)){
         tar_header_t *header = (tar_header_t*) buffer;
         // if it is the file we search for
@@ -118,7 +122,7 @@ int is_file(int tar_fd, char *path){
         }
         // if it is a simple file but not the one we search for
         if( header->typeflag == REGTYPE ) {
-            ssize_t size = TAR_INT(header->size); // get the size of this file
+            size_t size = TAR_INT(header->size); // get the size of this file
             if(size != 0) lseek (tar_fd, 512 + size, SEEK_CUR);  // Go to next header
         }
     }
@@ -137,6 +141,7 @@ int is_file(int tar_fd, char *path){
  */
 int is_symlink(int tar_fd, char *path) {
     char *buffer = (char *) malloc(512);
+    if(!buffer) return EXIT_FAILURE;
     while(read(tar_fd, buffer, 512)){
         tar_header_t *header = (tar_header_t*) buffer;
         // if it is the directory we search for
@@ -147,7 +152,7 @@ int is_symlink(int tar_fd, char *path) {
         }
         // if it is a simple file
         if( header->typeflag == REGTYPE ) {
-            ssize_t size = TAR_INT(header->size); // get the size of this file
+            size_t size = TAR_INT(header->size); // get the size of this file
             if(size != 0) lseek (tar_fd, 512+size, SEEK_CUR);  // Go to next header
         }
     }
@@ -180,7 +185,47 @@ int is_symlink(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
-    return 0;
+    char *buffer = malloc(512), *temp = malloc(100);
+    if(!buffer || !temp) return EXIT_FAILURE;
+    tar_header_t *header = (tar_header_t*) buffer;
+    strcpy(temp, path);
+    if(is_symlink(tar_fd, path)){
+        while(read(tar_fd, buffer, 512)) {
+            header = (tar_header_t *) buffer; // set header to next one
+            if (strcmp(temp, header->linkname)) { // if we find the symlink
+                strcat(temp, (const char *) '/'); // add '/' after the directory path // TODO possibly buggy
+                lseek(tar_fd, 0, SEEK_SET); // reset the file descriptor pointer
+                break;
+            }
+            if (header->typeflag == REGTYPE && TAR_INT(header->size)) { //if it is a simple file
+                int size = TAR_INT(header->size); // get size
+                lseek(tar_fd, 512 + size, SEEK_CUR); // move to next header
+            }
+        }
+    }
+    if(!is_dir(tar_fd, temp)){ // if no directory att the given path exists -> 0
+        free(temp); free(buffer); //garbage collection
+        return 0; // not a directory or no directory exists at the given path
+    }
+    size_t entries_length = *no_entries; // set a temporary variable
+    *no_entries = 0; // callee resetting the no_entries value
+    while(read(tar_fd, buffer, 512) && entries_length >= *no_entries){
+        header = (tar_header_t*) buffer;
+        if(header->typeflag == REGTYPE && TAR_INT(header->size)) {
+            int size = TAR_INT(header->size);
+            lseek(tar_fd, 512 + size, SEEK_CUR);
+        }
+        char *copy = (char*) malloc(100);
+        strcpy(copy, temp); // copy because strtok modify his first argument
+        char* token = strtok(copy, "/"); // split string with delim="/"
+        printf("%s  ----  %s \n", temp, token);
+        while(token) { // iterated trough split parts until NULL
+            // TODO
+            token = strtok(NULL, "/"); // next split part
+        }
+    }
+    free(buffer); free(temp); // garbage collection
+    return 1; // successfully listed
 }
 
 /**
@@ -205,6 +250,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
     if(!is_file(tar_fd, path) && !is_symlink(tar_fd, path)) return -1; // no entry at given path or is not a file
 
     char* buffer = (char*)malloc(512);
+    if(!buffer) return EXIT_FAILURE;
     tar_header_t *header;
     ssize_t size = 0;
 
@@ -240,8 +286,8 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
 long checksum(char* buffer){
     long result = 0; // long to compare with TAR_INT without any conversion error
     for(int i = 0; i < 512; i++){
-        if(i < 148 || i > 155) result = result + *(buffer + i); //exclude header checksum
-        else result += 32; // add 4 bytes (sizeof(int))
+        if(i >= 148 && i <= 155) result += 32; // add 4 bytes (sizeof(int))
+        else result = result + *(buffer + i); //exclude header checksum
     }
     return result;
 }
