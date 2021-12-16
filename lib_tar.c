@@ -56,19 +56,13 @@ int exists(int tar_fd, char *path) {
         // if it exists
         if (strncmp(header->name, path, strlen(path) - 1) == 0){
             lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer
-            if(header->typeflag == DIRTYPE || header->typeflag == REGTYPE) {
-                free(buffer); //garbage buffer
-                return 1;  //  we found the directory
-            }
-            if(header->typeflag == SYMTYPE){
-                free(buffer);
-                return exists(tar_fd, header->linkname);
-            }
+            free(buffer); //garbage buffer
+            return 1;  //  we found the directory
         }
         // if it is a simple file
         if( header->typeflag == REGTYPE ) {
             size_t size = TAR_INT(header->size); // get the size of this file
-            if(size != 0) lseek (tar_fd, 512+size, SEEK_CUR);  // Go to next header
+            if(size != 0) lseek (tar_fd, 512*(size/512 +1), SEEK_CUR);  // Go to next header
         }
     }
     free(buffer); //garbage buffer
