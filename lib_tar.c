@@ -86,7 +86,7 @@ int is_dir(int tar_fd, char *path) {
     while(read(tar_fd, buffer, 512)){
         tar_header_t *header = (tar_header_t*) buffer;
         // if it is the directory we search for
-        if (strncmp(header->name, path, strlen(path) - 1) == 0 &&  header->typeflag == DIRTYPE){
+        if (strcmp(header->name, path) == 0 &&  header->typeflag == DIRTYPE){
             free(buffer); //garbage buffer
             lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer
             return 1;  //  we found the directory
@@ -94,7 +94,7 @@ int is_dir(int tar_fd, char *path) {
         // if it is a simple file
         if( header->typeflag == REGTYPE ) {
             size_t size = TAR_INT(header->size); // get the size of this file
-            if(size != 0) lseek (tar_fd, 512+size, SEEK_CUR);  // Go to next header
+            if(size != 0) lseek (tar_fd, 512*(size/512 +1), SEEK_CUR);  // Go to next header
         }
     }
     free(buffer); //garbage buffer
@@ -126,7 +126,7 @@ int is_file(int tar_fd, char *path){
         // if it is a simple file but not the one we search for
         if( header->typeflag == REGTYPE ) {
             size_t size = TAR_INT(header->size); // get the size of this file
-            if(size != 0) lseek (tar_fd, 512 + size, SEEK_CUR);  // Go to next header
+            if(size != 0) lseek (tar_fd, 512*(size/512 +1), SEEK_CUR);  // Go to next header
         }
     }
     free(buffer); //garbage buffer
@@ -156,7 +156,7 @@ int is_symlink(int tar_fd, char *path) {
         // if it is a simple file
         if( header->typeflag == REGTYPE ) {
             size_t size = TAR_INT(header->size); // get the size of this file
-            if(size != 0) lseek (tar_fd, 512+size, SEEK_CUR);  // Go to next header
+            if(size != 0) lseek (tar_fd, 512*(size/512 +1), SEEK_CUR);  // Go to next header
         }
     }
     free(buffer); //garbage buffer
@@ -202,7 +202,7 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
             }
             if (header->typeflag == REGTYPE && TAR_INT(header->size)) { //if it is a simple file
                 int size = TAR_INT(header->size); // get size
-                lseek(tar_fd, 512 + size, SEEK_CUR); // move to next header
+                lseek(tar_fd, 512*(size/512 +1), SEEK_CUR); // move to next header
             }
         }
     }
@@ -267,7 +267,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
         if(strcmp(header->name, path) == 0 && header->typeflag == REGTYPE) break; // we point on the file
         if(header->typeflag == REGTYPE){
             size = TAR_INT(header->size);
-            if(size != 0) lseek(tar_fd, 512 + size, SEEK_CUR);  // go to next header
+            if(size != 0) lseek(tar_fd, 512*(size/512 +1), SEEK_CUR);  // go to next header
         }
     }
 
