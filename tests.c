@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
  */
 
 int main(int argc, char **argv){
-    int tar_fd = open("./archive3.tar", O_RDONLY);
+    int tar_fd = open("./archive4.tar", O_RDONLY);
     printf("IS DIR with dir? -- %d (1)\n", is_dir(tar_fd, "archive/dir/not_dir/"));
     printf("IS DIR with file? -- %d (0)\n", is_dir(tar_fd, "archive/file.txt"));
     printf("IS FILE with dir? -- %d (0)\n", is_file(tar_fd, "archive/dir/"));
@@ -74,7 +74,7 @@ int main(int argc, char **argv){
     for (int i = 0; i < 100; i++) entries[i] = (char*) malloc(sizeof(char)*100);
     size_t *no_entries = (size_t*)malloc(sizeof(size_t));
     *no_entries = 100;
-    list(tar_fd, "archive/dir/", entries, no_entries);
+    list(tar_fd, "archive/link", entries, no_entries);
     for(int i = 0; i < *no_entries; i++) printf("LIST: %s\n", entries[i]);
     return EXIT_SUCCESS;
 }

@@ -190,7 +190,7 @@ int is_symlink(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
-    if(exists(tar_fd, path) == 0) {
+    if(!exists(tar_fd, path)) {
         *no_entries = 0;
         return 0;
     }
@@ -202,12 +202,13 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
             tar_header_t *header = (tar_header_t *) buffer;
             if( strcmp(header->name, path) == 0) {
                 strcpy(temp, header->linkname);
-                lseek(tar_fd, 0, SEEK_SET); //reset file descriptor pointer for is_file
-                if(!is_file(tar_fd, temp)){
-                    temp[strlen(header->linkname)] = '/'; // add / if it's a  directory
-                    temp[strlen(header->linkname) + 1] = '\0';
-                }
-                break;
+                int start = 0;
+                for(int i = 0; i < strlen(temp); i++) if(temp[i] != '.' && temp[i] != '/') break; else start++;
+                for(int i = 0; i < strlen(temp) - start + 1; i++) temp[i] = temp[start+i];
+                temp[strlen(temp)+1] = '\0';
+                temp[strlen(temp)] = '/';
+                lseek(tar_fd, 0, SEEK_SET);
+                return list(tar_fd, temp, entries, no_entries);
             }
             if(header->typeflag == REGTYPE && TAR_INT(header->size) != 0){
                 lseek(tar_fd, 512*(TAR_INT(header->size)/512 +1), SEEK_CUR);  // go to next header
