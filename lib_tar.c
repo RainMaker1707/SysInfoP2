@@ -255,7 +255,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
             if(strcmp(header->name, path) == 0 && header->typeflag == SYMTYPE) {
                 *path = *header->linkname;
                 lseek(tar_fd, 0, SEEK_SET);
-                return read_file(tar_fd, path, offset, dest, len);
+                break;
             }
 
             if (header->typeflag == REGTYPE && TAR_INT(header->size)) { //if it is a simple file with size >0
