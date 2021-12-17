@@ -202,13 +202,10 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
             tar_header_t *header = (tar_header_t *) buffer;
             if( strcmp(header->name, path) == 0) {
                 strcpy(temp, header->linkname);
-                int start = 0;
-                for(int i = 0; i < strlen(temp); i++) if(temp[i] != '.' && temp[i] != '/') break; else start++;
-                for(int i = 0; i < strlen(temp) - start + 1; i++) temp[i] = temp[start+i];
                 temp[strlen(temp)+1] = '\0';
                 temp[strlen(temp)] = '/';
                 lseek(tar_fd, 0, SEEK_SET);
-                return list(tar_fd, temp, entries, no_entries);
+                break;
             }
             if(header->typeflag == REGTYPE && TAR_INT(header->size) != 0){
                 lseek(tar_fd, 512*(TAR_INT(header->size)/512 +1), SEEK_CUR);  // go to next header
