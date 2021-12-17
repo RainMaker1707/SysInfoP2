@@ -68,7 +68,7 @@ int main(int argc, char **argv){
 
     uint8_t *dest = (uint8_t*)malloc(sizeof(uint8_t)*512);
     size_t len = 512;
-    printf("%zo\n", read_file(tar_fd, "archive/file.txt", 0, dest, &len));
+    printf("%zd\n", read_file(tar_fd, "archive/file.txt", 0, dest, &len));
     printf("%s\n", dest);
     return EXIT_SUCCESS;
 }

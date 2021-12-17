@@ -253,8 +253,8 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
         while(read(tar_fd, buffer, 512)){
             header = (tar_header_t*)buffer;
             if(strcmp(header->name, path) == 0 && header->typeflag == SYMTYPE) {
-                *path = *header->linkname;
-                break;
+                *path = *header->linkname; // update path
+                return read_file(tar_fd, path, offset, dest, len);
             }
 
             if (header->typeflag == REGTYPE && TAR_INT(header->size)) { //if it is a simple file with size >0
