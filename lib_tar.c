@@ -190,31 +190,17 @@ int is_symlink(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
-    if(!exists(tar_fd, path)) {
-        *no_entries = 0;
-        return 0;
-    }
-    char *buffer = (char *) malloc(512);
-    char *temp = malloc(100); // same length as the linkname or the name of a header
+    char *buffer = (char *) malloc(sizeof(char)*512);
+    char *temp = (char*) malloc(sizeof(char)*100); // same length as the linkname or the name of a header
+    if(!buffer || !temp) return EXIT_FAILURE;
     strcpy(temp, path);
     if( is_symlink(tar_fd, path) ){
-        while(read(tar_fd, buffer, 512) ){
-            tar_header_t *header = (tar_header_t *) buffer;
-            if( strcmp(header->name, path) == 0) {
-                strcpy(temp, header->linkname);
-                temp[strlen(temp)+1] = '\0';
-                temp[strlen(temp)] = '/';
-                lseek(tar_fd, 0, SEEK_SET);
-                break;
-            }
-            if(header->typeflag == REGTYPE && TAR_INT(header->size) != 0){
-                lseek(tar_fd, 512*(TAR_INT(header->size)/512 +1), SEEK_CUR);  // go to next header
-            }
-        }
+        strcpy(temp, "nonononon"); // TODO DEBUG
     }
     if(!is_dir(tar_fd, temp)){
         free(buffer); free(temp); //garbage collection
         lseek(tar_fd, 0, SEEK_SET); //reset file descriptor pointer
+        *no_entries = 0;
         return 0;
     }
     size_t entered = 0;

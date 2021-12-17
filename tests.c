@@ -73,8 +73,9 @@ int main(int argc, char **argv){
     char** entries = (char**)malloc(sizeof(char) * 100);
     for (int i = 0; i < 100; i++) entries[i] = (char*) malloc(sizeof(char)*100);
     size_t *no_entries = (size_t*)malloc(sizeof(size_t));
-    *no_entries = 100;
+    *no_entries = 5;
     list(tar_fd, "archive/link", entries, no_entries);
     for(int i = 0; i < *no_entries; i++) printf("LIST: %s\n", entries[i]);
+    free(entries);
     return EXIT_SUCCESS;
 }
