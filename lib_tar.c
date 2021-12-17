@@ -267,6 +267,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
     else {
         if(is_file(tar_fd, path)){
             lseek(tar_fd, 0, SEEK_SET);
+            header = (tar_header_t*)buffer;
             while(read(tar_fd, buffer, 512)){
                 header = (tar_header_t*)buffer;
                 if(strcmp(path, header->name) == 0 && header->typeflag == REGTYPE) break; // we are on the good header
@@ -276,7 +277,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
                     lseek(tar_fd, 512*(size/512 +1), SEEK_CUR); // move to next header
                 }
             }
-            //lseek(tar_fd, 0, SEEK_SET);
+
             if(offset >= TAR_INT(header->size)) return -2; // offset is outside of file length
             lseek(tar_fd, offset, SEEK_CUR); // move to after the offset
             size_t temp = TAR_INT(header->size) - offset; // get the file size without the offset
@@ -285,6 +286,8 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
             return temp - *len; // return size stay to read
         }
     }
+    free(buffer);
+    lseek(tar_fd, 0, SEEK_SET);
     return -1; //exclusive return error
 }
 
