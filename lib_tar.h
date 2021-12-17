@@ -151,4 +151,16 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
 
 long checksum(char* buffer);
 
+/**
+ * Search if headerPath is in the good path file and not in a other directory or subdirectory
+ *
+ * @param path
+ * @param headerPath
+ * @return 0 if ... 1 else
+ */
+int path_helper(char *path, char* headerPath);
+
+
+int not_in_entries(char** entries, char* path, int len);
+
 #endif

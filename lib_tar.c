@@ -190,40 +190,69 @@ int is_symlink(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
-    char *buffer = malloc(512), *temp = malloc(100);
-    if(!buffer || !temp) return EXIT_FAILURE;
-    tar_header_t *header = (tar_header_t*) buffer;
+    if(exists(tar_fd, path) == 0) {
+        *no_entries = 0;
+        return 0;
+    }
+    char *buffer = (char *) malloc(512);
+    char *temp = malloc(100); // same length as the linkname or the name of a header
     strcpy(temp, path);
-    if(is_symlink(tar_fd, path)){
-        while(read(tar_fd, buffer, 512)) {
-            header = (tar_header_t *) buffer; // set header to next one
-            if (strcmp(temp, header->linkname)) { // if we find the symlink
-                strcat(temp, "/"); // add '/' after the directory path // TODO possibly buggy
-                lseek(tar_fd, 0, SEEK_SET); // reset the file descriptor pointer
+    if( is_symlink(tar_fd, path) ){
+        while(read(tar_fd, buffer, 512) ){
+            tar_header_t *header = (tar_header_t *) buffer;
+            if( strcmp(header->name, path) == 0) {
+                strcpy(temp, header->linkname);
+                lseek(tar_fd, 0, SEEK_SET); //reset file descriptor pointer for is_file
+                if(!is_file(tar_fd, temp)){
+                    temp[strlen(header->linkname)] = '/'; // add / if it's a  directory
+                    temp[strlen(header->linkname) + 1] = '\0';
+                }
                 break;
             }
-            if (header->typeflag == REGTYPE && TAR_INT(header->size)) { //if it is a simple file
-                int size = TAR_INT(header->size); // get size
-                lseek(tar_fd, 512*(size/512 +1), SEEK_CUR); // move to next header
+            if(header->typeflag == REGTYPE && TAR_INT(header->size) != 0){
+                lseek(tar_fd, 512*(TAR_INT(header->size)/512 +1), SEEK_CUR);  // go to next header
             }
         }
     }
-    if(!is_dir(tar_fd, temp)){ // if no directory att the given path exists -> 0
-        free(temp); free(buffer); //garbage collection
-        return 0; // not a directory or no directory exists at the given path
+    if(!is_dir(tar_fd, temp)){
+        free(buffer); free(temp); //garbage collection
+        lseek(tar_fd, 0, SEEK_SET); //reset file descriptor pointer
+        return 0;
     }
-    size_t entries_length = *no_entries; // set a temporary variable
-    *no_entries = 0; // callee resetting the no_entries value
-    while(read(tar_fd, buffer, 512) && entries_length >= *no_entries){
-        header = (tar_header_t*) buffer;
-        if(header->typeflag == REGTYPE && TAR_INT(header->size)) {
-            int size = TAR_INT(header->size);
-            lseek(tar_fd, 512*(size/512 +1), SEEK_CUR);
+    size_t entered = 0;
+    while(read(tar_fd, buffer, 512) && entered < *no_entries){
+        tar_header_t *header = (tar_header_t*)buffer;
+        if(header->typeflag == REGTYPE && TAR_INT(header->size) != 0){
+            lseek(tar_fd, 512*(TAR_INT(header->size)/512 +1), SEEK_CUR); // go to next header
         }
-        // TODO
+        if(path_helper(path, header->name) && not_in_entries(entries, header->name, entered)) {
+            strcpy(entries[entered++], header->name);
+        }
     }
-    free(buffer); free(temp); // garbage collection
-    return 1; // successfully listed
+    free(buffer); free(temp); //garbage collection
+    lseek(tar_fd, 0, SEEK_SET);//reset file descriptor pointer
+    *no_entries = entered;
+    return 1;
+}
+
+/**
+ * Search if headerPath is in the good path file and not in a other directory or subdirectory
+ *
+ * @param path
+ * @param headerPath
+ * @return 0 if ... 1 else
+ */
+int path_helper(char *path, char* headerPath){
+    if(strncmp(path, headerPath, strlen(path)-1) != 0) return 0; // check first part of path
+    for(int i = strlen(path); i < strlen(headerPath); i++) {
+        if(headerPath[i] == '/' && i+1 < strlen(headerPath) && headerPath[i+1] != '\0') return 0;
+    }
+    return 1;
+}
+
+int not_in_entries(char** entries, char* path, int len){
+    for(int i = 0; i < len; i++) if (strcmp(entries[i], path) == 0) return 0;
+    return 1;
 }
 
 /**
@@ -275,8 +304,8 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
         }
         tar_header_t *header = (tar_header_t*)buffer;
         if(offset >= TAR_INT(header->size)) return -2; // offset is outside of file length
-        lseek(tar_fd, offset, SEEK_CUR); // move to after the offset
         size_t temp = TAR_INT(header->size) - offset; // get the file size without the offset
+        lseek(tar_fd, offset, SEEK_CUR); // move to after the offset
         *len = read(tar_fd, dest, temp > *len ? *len:temp); // read the file partially or in its entirety dependant of len
         free(buffer); // garbage buffer
         return temp - *len; // return size stay to read
