@@ -200,7 +200,7 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
     if(!is_dir(tar_fd, temp)){
         free(buffer); free(temp); //garbage collection
         lseek(tar_fd, 0, SEEK_SET); //reset file descriptor pointer
-        *no_entries = 0;
+        //*no_entries = 0;
         return 0;
     }
     size_t entered = 0;
