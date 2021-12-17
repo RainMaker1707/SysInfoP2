@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
  */
 
 int main(int argc, char **argv){
-    int tar_fd = open("./archive2.tar", O_RDONLY);
+    int tar_fd = open("./archive3.tar", O_RDONLY);
     printf("IS DIR with dir? -- %d (1)\n", is_dir(tar_fd, "archive/dir/not_dir/"));
     printf("IS DIR with file? -- %d (0)\n", is_dir(tar_fd, "archive/file.txt"));
     printf("IS FILE with dir? -- %d (0)\n", is_file(tar_fd, "archive/dir/"));
@@ -53,6 +53,22 @@ int main(int argc, char **argv){
     printf("IS FILE with file? -- %d (1)\n", is_file(tar_fd, "archive/file.txt"));
     printf("IS FILE with file? -- %d (1)\n", is_file(tar_fd, "archive/dir/not_dir/file3.txt"));
     printf("IS FILE with TAR? -- %d (1)\n", is_file(tar_fd, "archive/dir/archive.tar"));
-    printf("%d\n", check_archive(tar_fd));
+    printf("IS LINK with dir -- %d (0)\n", is_symlink(tar_fd, "archive/dir/"));
+    printf("IS LINK with file -- %d (0)\n", is_symlink(tar_fd, "archive/dir/file.txt"));
+    printf("IS LINK with symlink -- %d (1)\n", is_symlink(tar_fd, "archive/link"));
+    printf("Valid archive -- %d (>0)\n", check_archive(tar_fd));
+
+    /*
+    char** entries = (char**)malloc(sizeof(char*) * 100);
+    for(int i = 0; i < 100; i++) entries[i] = (char*)malloc(sizeof(char)*100);
+    size_t *no_entries = (size_t*)malloc(sizeof(size_t));
+    *no_entries = 100;
+    list(tar_fd, "archive/dir/", entries, no_entries);
+     */
+
+    uint8_t *dest = (uint8_t*)malloc(sizeof(uint8_t)*512);
+    size_t len = 512;
+    printf("%lo\n", read_file(tar_fd, "archive/file.txt", 0, dest, &len));
+    printf("%s\n", dest);
     return EXIT_SUCCESS;
 }
