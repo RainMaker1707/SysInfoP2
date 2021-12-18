@@ -267,6 +267,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
             tar_header_t *header = (tar_header_t*)buffer;
             if(strcmp(header->name, path) == 0 && header->typeflag == SYMTYPE) {
                 *path = *header->linkname; // update path
+                lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer before recursion
                 return read_file(tar_fd, path, offset, dest, len);
             }
 
