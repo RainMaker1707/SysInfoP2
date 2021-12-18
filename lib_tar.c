@@ -190,6 +190,7 @@ int is_symlink(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
+    if(!exists(tar_fd, path)) return 0;
     char *buffer = (char *) malloc(sizeof(char)*512);
     char *temp = (char*) malloc(sizeof(char)*100); // same length as the linkname or the name of a header
     if(!buffer || !temp) return EXIT_FAILURE;
@@ -197,15 +198,11 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
     if(is_symlink(tar_fd, path)){
         while(read(tar_fd, buffer, 512)){
             tar_header_t *header = (tar_header_t*)buffer;
-            if(checksum(buffer) == 0) {
-                lseek(tar_fd, 0, SEEK_SET);
+            if(strcmp(header->name, path) == 0 && header->typeflag == SYMTYPE) {
+                lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer before recursion
+                char *temp = header->linkname;
                 free(buffer);
-                return -1;
-            }
-            if(strcmp(path, header->name) == 0){
-                strcpy(temp, header->linkname);
-                lseek(tar_fd, 0, SEEK_SET);
-                break;
+                return list(tar_fd, temp, entries, no_entries);
             }
             if(header->typeflag == REGTYPE && TAR_INT(header->size) != 0){
                 lseek(tar_fd, 512*(TAR_INT(header->size)/512 +1), SEEK_CUR); // go to next header
@@ -277,6 +274,7 @@ char* format_path(char* path, char*toFormat){
  *
  */
 ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *len) {
+    printf("path -- %s\n", path);
     if(!exists(tar_fd, path)) return -1;
     char* buffer = (char*)malloc(sizeof(char)*512);
     if(!buffer) return EXIT_FAILURE;
@@ -284,11 +282,11 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
         while(read(tar_fd, buffer, 512)){
             tar_header_t *header = (tar_header_t*)buffer;
             if(strcmp(header->name, path) == 0 && header->typeflag == SYMTYPE) {
-                *path = *header->linkname; // update path
                 lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer before recursion
-                return read_file(tar_fd, path, offset, dest, len);
+                char *temp = header->linkname;
+                free(buffer);
+                return read_file(tar_fd, temp, offset, dest, len);
             }
-
             if (header->typeflag == REGTYPE && TAR_INT(header->size)) { //if it is a simple file with size >0
                 int size = TAR_INT(header->size); // get size
                 lseek(tar_fd, 512*(size/512 +1), SEEK_CUR); // move to next header
