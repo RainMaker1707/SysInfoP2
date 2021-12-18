@@ -222,7 +222,8 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
             lseek(tar_fd, 512*(TAR_INT(header->size)/512 +1), SEEK_CUR); // go to next header
         }
         if(path_helper(path, header->name) && not_in_entries(entries, header->name, entered)) {
-            strcpy(entries[entered++], header->name);
+            if(header->typeflag == SYMTYPE) strcpy(entries[entered++], header->linkname);
+            else strcpy(entries[entered++], header->name);
         }
     }
     free(buffer); free(temp); //garbage collection
