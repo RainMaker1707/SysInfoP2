@@ -200,10 +200,10 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
     if(!is_dir(tar_fd, temp)){
         free(buffer); free(temp); //garbage collection
         lseek(tar_fd, 0, SEEK_SET); //reset file descriptor pointer
-        //*no_entries = 0;
+        *no_entries = 0;
         return 0;
     }
-    size_t entered = 0;
+    int entered = 0;
     while(read(tar_fd, buffer, 512) && entered < *no_entries){
         tar_header_t *header = (tar_header_t*)buffer;
         if(header->typeflag == REGTYPE && TAR_INT(header->size) != 0){
@@ -258,10 +258,9 @@ int not_in_entries(char** entries, char* path, int len){
  *
  */
 ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *len) {
-    if(!exists(tar_fd, path) || (!is_file(tar_fd, path) && !is_symlink(tar_fd, path))) return -1; // no entry at given path or is not a file
+    if(!exists(tar_fd, path)) return -1;
     char* buffer = (char*)malloc(512);
     if(!buffer) return EXIT_FAILURE;
-    //tar_header_t *header = (tar_header_t*) buffer;
     if(is_symlink(tar_fd, path)){
         while(read(tar_fd, buffer, 512)){
             tar_header_t *header = (tar_header_t*)buffer;
@@ -278,7 +277,6 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
         }
     }
     if(is_file(tar_fd, path)){
-        lseek(tar_fd, 0, SEEK_SET);
         while(read(tar_fd, buffer, 512)){
             tar_header_t *header = (tar_header_t*)buffer;
             if(strcmp(path, header->name) == 0 && header->typeflag == REGTYPE) break; // we are on the good header
@@ -292,6 +290,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
         size_t temp = TAR_INT(header->size) - offset; // get the file size without the offset
         lseek(tar_fd, offset, SEEK_CUR); // move to after the offset
         *len = read(tar_fd, dest, temp > *len ? *len:temp); // read the file partially or in its entirety dependant of len
+        lseek(tar_fd, 0, SEEK_SET); // reset file descriptor  pointer
         free(buffer); // garbage buffer
         return temp - *len; // return size stay to read
     }
