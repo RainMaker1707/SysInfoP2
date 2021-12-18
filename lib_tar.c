@@ -195,7 +195,15 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
     if(!buffer || !temp) return EXIT_FAILURE;
     strcpy(temp, path);
     if( is_symlink(tar_fd, path) ){
-        strcpy(temp, "nonononon"); // TODO DEBUG
+        while(read(tar_fd, buffer, 512)){
+            tar_header_t *header = (tar_header_t*)buffer;
+            if(strcmp(path, header->name) == 0){
+
+            }
+            if(header->typeflag == REGTYPE && TAR_INT(header->size) != 0){
+                lseek(tar_fd, 512*(TAR_INT(header->size)/512 +1), SEEK_CUR); // go to next header
+            }
+        }
     }
     if(!is_dir(tar_fd, temp)){
         free(buffer); free(temp); //garbage collection
@@ -237,6 +245,10 @@ int path_helper(char *path, char* headerPath){
 int not_in_entries(char** entries, char* path, int len){
     for(int i = 0; i < len; i++) if (strcmp(entries[i], path) == 0) return 0;
     return 1;
+}
+
+char* format_path(char* path, char*toFormat){
+    return NULL;
 }
 
 /**
@@ -286,7 +298,11 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
             }
         }
         tar_header_t *header = (tar_header_t*)buffer;
-        if(offset >= TAR_INT(header->size)) return -2; // offset is outside of file length
+        if(offset >= TAR_INT(header->size)) {
+            free(buffer);
+            lseek(tar_fd, 0, SEEK_SET);
+            return -2; // offset is outside of file length
+        }
         size_t temp = TAR_INT(header->size) - offset; // get the file size without the offset
         lseek(tar_fd, offset, SEEK_CUR); // move to after the offset
         *len = read(tar_fd, dest, temp > *len ? *len:temp); // read the file partially or in its entirety dependant of len

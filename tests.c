@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
  */
 
 int main(int argc, char **argv){
-    int tar_fd = open("./archive4.tar", O_RDONLY);
+    int tar_fd = open("./archive3.tar", O_RDONLY);
     printf("IS DIR with dir? -- %d (1)\n", is_dir(tar_fd, "archive/dir/not_dir/"));
     printf("IS DIR with file? -- %d (0)\n", is_dir(tar_fd, "archive/file.txt"));
     printf("IS FILE with dir? -- %d (0)\n", is_file(tar_fd, "archive/dir/"));
@@ -64,12 +64,14 @@ int main(int argc, char **argv){
     size_t len = 512;
     printf("%zd\n", read_file(tar_fd, "archive/file.txt", 0, dest, &len));
     printf("%s\n", dest);
+    free(dest);
 
     lseek(tar_fd, 0, SEEK_SET);
     uint8_t *dest2 = (uint8_t*)malloc(sizeof(uint8_t)*512);
     size_t len2 = 512;
     printf("%zd\n", read_file(tar_fd, "archive/dir/file2.txt", 0, dest2, &len2));
     printf("%s\n", dest2);
+    free(dest2);
 
     printf("Test 1 --- %d (1)\n", path_helper("archive/dir/", "archive/dir/"));
     printf("Test 2 --- %d (0)\n", path_helper("archive/", "archive/dir/not_dir/"));
@@ -77,7 +79,7 @@ int main(int argc, char **argv){
     printf("Test 4 --- %d (0)\n", path_helper("archive/dir/", "archive/dir/not_dir/file3.txt"));
     printf("Test 5 --- %d (0)\n", exists(tar_fd, "archive/dir/no_dir/"));
 
-    /*
+
     char** entries = (char**)malloc(sizeof(char) * 100);
     for (int i = 0; i < 100; i++) entries[i] = (char*) malloc(sizeof(char)*100);
     size_t *no_entries = (size_t*)malloc(sizeof(size_t));
@@ -85,6 +87,5 @@ int main(int argc, char **argv){
     list(tar_fd, "archive/", entries, no_entries);
     for(int i = 0; i < *no_entries; i++) printf("LIST: %s\n", entries[i]);
     free(entries);
-     */
     return EXIT_SUCCESS;
 }
