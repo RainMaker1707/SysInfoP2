@@ -194,12 +194,16 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
     char *temp = (char*) malloc(sizeof(char)*100); // same length as the linkname or the name of a header
     if(!buffer || !temp) return EXIT_FAILURE;
     strcpy(temp, path);
-    if( is_symlink(tar_fd, path) ){
+    if(is_symlink(tar_fd, path)){
         while(read(tar_fd, buffer, 512)){
             tar_header_t *header = (tar_header_t*)buffer;
+            if(checksum(buffer) == 0) {
+                lseek(tar_fd, 0, SEEK_SET);
+                free(buffer);
+                return -1;
+            }
             if(strcmp(path, header->name) == 0){
                 strcpy(temp, header->linkname);
-                free(buffer);
                 lseek(tar_fd, 0, SEEK_SET);
                 break;
             }
