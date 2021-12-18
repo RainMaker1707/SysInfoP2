@@ -18,7 +18,7 @@
  */
 int check_archive(int tar_fd) {
     int result = 0;
-    char *buffer = (char*)malloc(512);
+    char *buffer = (char*)malloc(sizeof(char)*512);
     if(!buffer) return EXIT_FAILURE;
     while(read(tar_fd, buffer, 512)){
         if (*buffer == AREGTYPE) break; //end of archive/file '\0'
@@ -50,7 +50,7 @@ int check_archive(int tar_fd) {
  */
 int exists(int tar_fd, char *path) {
     if(path == NULL) return 0;
-    char *buffer = (char *) malloc(512);
+    char *buffer = (char *) malloc(sizeof(char)*512);
     if(!buffer) return EXIT_FAILURE;
     while(read(tar_fd, buffer, 512)){
         tar_header_t *header = (tar_header_t*) buffer;
@@ -82,7 +82,7 @@ int exists(int tar_fd, char *path) {
  */
 int is_dir(int tar_fd, char *path) {
     if(path == NULL) return 0;
-    char *buffer = (char *) malloc(512);
+    char *buffer = (char *) malloc(sizeof(char)*512);
     if(!buffer) return EXIT_FAILURE;
     while(read(tar_fd, buffer, 512)){
         tar_header_t *header = (tar_header_t*) buffer;
@@ -114,7 +114,7 @@ int is_dir(int tar_fd, char *path) {
  */
 int is_file(int tar_fd, char *path){
     if(path == NULL) return 0;
-    char *buffer = (char *) malloc(512);
+    char *buffer = (char *) malloc(sizeof(char)*512);
     if(!buffer) return EXIT_FAILURE;
     while(read(tar_fd, buffer, 512)){
         tar_header_t *header = (tar_header_t*) buffer;
@@ -144,7 +144,7 @@ int is_file(int tar_fd, char *path){
  *         any other value otherwise.
  */
 int is_symlink(int tar_fd, char *path) {
-    char *buffer = (char *) malloc(512);
+    char *buffer = (char *) malloc(sizeof(char)*512);
     if(!buffer) return EXIT_FAILURE;
     while(read(tar_fd, buffer, 512)){
         tar_header_t *header = (tar_header_t*) buffer;
@@ -259,7 +259,7 @@ int not_in_entries(char** entries, char* path, int len){
  */
 ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *len) {
     if(!exists(tar_fd, path)) return -1;
-    char* buffer = (char*)malloc(512);
+    char* buffer = (char*)malloc(sizeof(char)*512);
     if(!buffer) return EXIT_FAILURE;
     if(is_symlink(tar_fd, path)){
         while(read(tar_fd, buffer, 512)){
