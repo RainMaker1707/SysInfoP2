@@ -198,7 +198,10 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
         while(read(tar_fd, buffer, 512)){
             tar_header_t *header = (tar_header_t*)buffer;
             if(strcmp(path, header->name) == 0){
-
+                char* temp = header->linkname;
+                free(buffer);
+                lseek(tar_fd, 0, SEEK_SET);
+                return list(tar_fd, temp, entries, no_entries);
             }
             if(header->typeflag == REGTYPE && TAR_INT(header->size) != 0){
                 lseek(tar_fd, 512*(TAR_INT(header->size)/512 +1), SEEK_CUR); // go to next header
