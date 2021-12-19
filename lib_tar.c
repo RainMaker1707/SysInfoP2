@@ -204,7 +204,7 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
                     int i = strlen(header->linkname)-1; while(header->linkname[i] != '/') i--;
                     if (header->linkname[i+1] != '\0') strcat(header->linkname, "/");
                 }
-                size_t R = list(tar_fd, header->linkname, entries, no_entries);
+                int R = list(tar_fd, header->linkname, entries, no_entries);
                 free(buffer);
                 return R;
             }
@@ -289,7 +289,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
                     int i = strlen(header->linkname)-1; while(header->linkname[i] != '/') i--;
                     if (header->linkname[i+1] != '\0') strcat(header->linkname, "/");
                 }
-                size_t R = read_file(tar_fd, header->linkname, offset, dest, len);
+                ssize_t R = read_file(tar_fd, header->linkname, offset, dest, len);
                 free(buffer);
                 return R;
             }
