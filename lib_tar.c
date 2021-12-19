@@ -204,18 +204,17 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
                     int i = strlen(header->linkname)-1; while(header->linkname[i] != '/') i--;
                     if (header->linkname[i+1] != '\0') strcat(header->linkname, "/");
                 }
-                strcpy(temp, header->linkname);
-                break;
+                return list(tar_fd, header->linkname, entries, no_entries);
             }
             if(header->typeflag == REGTYPE && TAR_INT(header->size) != 0){
                 lseek(tar_fd, 512*(TAR_INT(header->size)/512 +1), SEEK_CUR); // go to next header
             }
         }
     }
-    if(!exists(tar_fd, temp) || !is_dir(tar_fd, temp)){
+    if(!is_dir(tar_fd, temp)){
+        free(buffer); free(temp); //garbage collection
         lseek(tar_fd, 0, SEEK_SET); //reset file descriptor pointer
         *no_entries = 0;
-        free(buffer); free(temp); //garbage collection
         return 0;
     }
     int entered = 0;
@@ -278,20 +277,17 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
     printf("--- %s\n", path);
     if(!exists(tar_fd, path)) return -1;
     char* buffer = (char*)malloc(sizeof(char)*512);
-    char* temp_path = (char*)malloc(sizeof(char)*512); // temp
-    if(!buffer || !temp_path) return EXIT_FAILURE;
-    strcpy(temp_path, path);
-    if(is_symlink(tar_fd, temp_path)){
+    if(!buffer) return EXIT_FAILURE;
+    if(is_symlink(tar_fd, path)){
         while(read(tar_fd, buffer, 512)){
             tar_header_t *header = (tar_header_t*)buffer;
-            if(strcmp(header->name, temp_path) == 0 && header->typeflag == SYMTYPE) {
+            if(strcmp(header->name, path) == 0 && header->typeflag == SYMTYPE) {
                 lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer before recursion
                 if(!is_file(tar_fd, header->linkname)){
                     int i = strlen(header->linkname)-1; while(header->linkname[i] != '/') i--;
                     if (header->linkname[i+1] != '\0') strcat(header->linkname, "/");
                 }
-                strcpy(temp_path, header->linkname);
-                break;
+                return read_file(tar_fd, header->linkname, offset, dest, len);
             }
             if (header->typeflag == REGTYPE && TAR_INT(header->size)) { //if it is a simple file with size >0
                 int size = TAR_INT(header->size); // get size
@@ -299,10 +295,10 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
             }
         }
     }
-    if(exists(tar_fd, temp_path) && is_file(tar_fd, temp_path)){
+    if(is_file(tar_fd, path)){
         while(read(tar_fd, buffer, 512)){
             tar_header_t *header = (tar_header_t*)buffer;
-            if(strcmp(temp_path, header->name) == 0 && header->typeflag == REGTYPE) break; // we are on the good header
+            if(strcmp(path, header->name) == 0 && header->typeflag == REGTYPE) break; // we are on the good header
             if (header->typeflag == REGTYPE && TAR_INT(header->size)) { //if it is file but not the good one
                 int size = TAR_INT(header->size); // get size
                 lseek(tar_fd, 512*(size/512 +1), SEEK_CUR); // move to next header
@@ -310,7 +306,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
         }
         tar_header_t *header = (tar_header_t*)buffer;
         if(offset >= TAR_INT(header->size)) {
-            free(buffer); free(temp_path); // garbage collection
+            free(buffer);
             lseek(tar_fd, 0, SEEK_SET);
             return -2; // offset is outside of file length
         }
@@ -318,10 +314,10 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
         lseek(tar_fd, offset, SEEK_CUR); // move to after the offset
         *len = read(tar_fd, dest, temp > *len ? *len:temp); // read the file partially or in its entirety dependant of len
         lseek(tar_fd, 0, SEEK_SET); // reset file descriptor  pointer
-        free(buffer); free(temp_path);// garbage collection
+        free(buffer); // garbage buffer
         return temp - *len; // return size stay to read
     }
-    free(buffer); free(temp_path); // garbage collection
+    free(buffer);
     lseek(tar_fd, 0, SEEK_SET);
     return -1; //exclusive return error
 }
