@@ -73,6 +73,12 @@ int main(int argc, char **argv){
     printf("%s\n", dest2);
     free(dest2);
 
+    uint8_t *dest3 = (uint8_t*)malloc(sizeof(uint8_t)*512);
+    size_t len3 = 512;
+    printf("%zd\n", read_file(tar_fd, "archive/link", 0, dest3, &len3));
+    printf("%s\n", dest3);
+    free(dest3);
+
     printf("Test 1 --- %d (1)\n", path_helper("archive/dir/", "archive/dir/"));
     printf("Test 2 --- %d (0)\n", path_helper("archive/", "archive/dir/not_dir/"));
     printf("Test 3 --- %d (1)\n", path_helper("archive/", "archive/file.txt"));

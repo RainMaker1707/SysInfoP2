@@ -200,9 +200,12 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
             tar_header_t *header = (tar_header_t*)buffer;
             if(strcmp(header->name, path) == 0 && header->typeflag == SYMTYPE) {
                 lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer before recursion
-                char *temp = header->linkname;
-                free(buffer);
-                return list(tar_fd, temp, entries, no_entries);
+                path = header->linkname;
+                if(!is_file(tar_fd, path)){
+                    int i = strlen(path); while(path[i] != '/') i--;
+                    if (path[i+1] != '\0') strcat(path, "/");
+                }
+                break;
             }
             if(header->typeflag == REGTYPE && TAR_INT(header->size) != 0){
                 lseek(tar_fd, 512*(TAR_INT(header->size)/512 +1), SEEK_CUR); // go to next header
@@ -276,7 +279,7 @@ char* format_path(char* path, char*toFormat){
  *
  */
 ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *len) {
-    printf("path -- %s\n", path);
+    //printf("path -- %s\n", path);
     if(!exists(tar_fd, path)) return -1;
     char* buffer = (char*)malloc(sizeof(char)*512);
     if(!buffer) return EXIT_FAILURE;
@@ -285,8 +288,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
             tar_header_t *header = (tar_header_t*)buffer;
             if(strcmp(header->name, path) == 0 && header->typeflag == SYMTYPE) {
                 lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer before recursion
-                strcpy(path, header->linkname);
-                free(buffer);
+                path = header->linkname;
                 if(!is_file(tar_fd, path)){
                     int i = strlen(path); while(path[i] != '/') i--;
                     if (path[i+1] != '\0') strcat(path, "/");
