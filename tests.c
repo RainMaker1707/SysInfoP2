@@ -91,7 +91,7 @@ int main(int argc, char **argv){
     for (int i = 0; i < 100; i++) entries[i] = (char*) malloc(sizeof(char)*100);
     size_t *no_entries = (size_t*)malloc(sizeof(size_t));
     *no_entries = 5;
-    printf("V: %d\n", list(tar_fd, "archive/link", entries, no_entries));
+    printf("V: %d\n", list(tar_fd, "archive/dir/", entries, no_entries));
     for(int i = 0; i < *no_entries; i++) printf("LIST: %s\n", entries[i]);
     free(entries);
     return EXIT_SUCCESS;
