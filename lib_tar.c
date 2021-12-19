@@ -202,7 +202,7 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
                 lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer before recursion
                 path = header->linkname;
                 if(!is_file(tar_fd, path)){
-                    int i = strlen(path); while(path[i] != '/') i--;
+                    int i = strlen(path)-1; while(path[i] != '/') i--;
                     if (path[i+1] != '\0') strcat(path, "/");
                 }
                 break;
@@ -290,7 +290,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
                 lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer before recursion
                 path = header->linkname;
                 if(!is_file(tar_fd, path)){
-                    int i = strlen(path); while(path[i] != '/') i--;
+                    int i = strlen(path)-1; while(path[i] != '/') i--;
                     if (path[i+1] != '\0') strcat(path, "/");
                 }
                 break;
