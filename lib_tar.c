@@ -204,7 +204,9 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
                     int i = strlen(header->linkname)-1; while(header->linkname[i] != '/') i--;
                     if (header->linkname[i+1] != '\0') strcat(header->linkname, "/");
                 }
-                return list(tar_fd, header->linkname, entries, no_entries);
+                size_t R = list(tar_fd, header->linkname, entries, no_entries);
+                free(buffer);
+                return R;
             }
             if(header->typeflag == REGTYPE && TAR_INT(header->size) != 0){
                 lseek(tar_fd, 512*(TAR_INT(header->size)/512 +1), SEEK_CUR); // go to next header
@@ -287,7 +289,9 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
                     int i = strlen(header->linkname)-1; while(header->linkname[i] != '/') i--;
                     if (header->linkname[i+1] != '\0') strcat(header->linkname, "/");
                 }
-                return read_file(tar_fd, header->linkname, offset, dest, len);
+                size_t R = read_file(tar_fd, header->linkname, offset, dest, len);
+                free(buffer);
+                return R;
             }
             if (header->typeflag == REGTYPE && TAR_INT(header->size)) { //if it is a simple file with size >0
                 int size = TAR_INT(header->size); // get size
