@@ -216,8 +216,9 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
         return 0;
     }
     int entered = 0;
+    tar_header_t *header = (tar_header_t*)buffer;
+    lseek(tar_fd, 512, SEEK_CUR);  // go to next header / first file or dir and not the path given in arg to avoid it in the result
     while(read(tar_fd, buffer, 512) && entered < *no_entries){
-        tar_header_t *header = (tar_header_t*)buffer;
         if(header->typeflag == REGTYPE && TAR_INT(header->size) != 0){
             lseek(tar_fd, 512*(TAR_INT(header->size)/512 +1), SEEK_CUR); // go to next header
         }
