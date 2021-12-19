@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
  */
 
 int main(int argc, char **argv){
-    int tar_fd = open("./archive3.tar", O_RDONLY);
+    int tar_fd = open("./archive4.tar", O_RDONLY);
     printf("IS DIR with dir? -- %d (1)\n", is_dir(tar_fd, "archive/dir/not_dir/"));
     printf("IS DIR with file? -- %d (0)\n", is_dir(tar_fd, "archive/file.txt"));
     printf("IS FILE with dir? -- %d (0)\n", is_file(tar_fd, "archive/dir/"));
@@ -84,13 +84,14 @@ int main(int argc, char **argv){
     printf("Test 3 --- %d (1)\n", path_helper("archive/", "archive/file.txt"));
     printf("Test 4 --- %d (0)\n", path_helper("archive/dir/", "archive/dir/not_dir/file3.txt"));
     printf("Test 5 --- %d (0)\n", exists(tar_fd, "archive/dir/no_dir/"));
+    printf("Test 6 --- %d (0)\n", exists(tar_fd, "../archive/dir/"));
 
 
     char** entries = (char**)malloc(sizeof(char) * 100);
     for (int i = 0; i < 100; i++) entries[i] = (char*) malloc(sizeof(char)*100);
     size_t *no_entries = (size_t*)malloc(sizeof(size_t));
     *no_entries = 5;
-    list(tar_fd, "archive/", entries, no_entries);
+    printf("V: %d\n", list(tar_fd, "archive/link", entries, no_entries));
     for(int i = 0; i < *no_entries; i++) printf("LIST: %s\n", entries[i]);
     free(entries);
     return EXIT_SUCCESS;
