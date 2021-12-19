@@ -287,7 +287,8 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
                 lseek(tar_fd, 0, SEEK_SET); // reset file descriptor pointer before recursion
                 char *temp = header->linkname;
                 free(buffer);
-                return read_file(tar_fd, temp, offset, dest, len);
+                if(is_file(tar_fd, temp)) return read_file(tar_fd, temp, offset, dest, len);
+                else return read_file(tar_fd, strcat(temp, "/"), offset, dest, len);
             }
             if (header->typeflag == REGTYPE && TAR_INT(header->size)) { //if it is a simple file with size >0
                 int size = TAR_INT(header->size); // get size
