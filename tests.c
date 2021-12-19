@@ -87,12 +87,15 @@ int main(int argc, char **argv){
     printf("Test 6 --- %d (0)\n", exists(tar_fd, "../archive/dir/"));
 
 
-    char** entries = (char**)malloc(sizeof(char) * 100);
+    char** entries = (char**)malloc(sizeof(char) * 10000);
     for (int i = 0; i < 100; i++) entries[i] = (char*) malloc(sizeof(char)*100);
     size_t *no_entries = (size_t*)malloc(sizeof(size_t));
     *no_entries = 5;
     printf("V: %d\n", list(tar_fd, "archive/dir/", entries, no_entries));
     for(int i = 0; i < *no_entries; i++) printf("LIST: %s\n", entries[i]);
+    for (int i = 99; i >= 0; i--) free(entries[i]);
     free(entries);
+    free(no_entries);
+    close(tar_fd);
     return EXIT_SUCCESS;
 }
